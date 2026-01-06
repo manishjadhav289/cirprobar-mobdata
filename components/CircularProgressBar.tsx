@@ -1,13 +1,11 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Circle, G } from 'react-native-svg';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
-    useSharedValue,
     useAnimatedProps,
-    withTiming,
-    useDerivedValue,
-    interpolateColor,
+    useSharedValue,
+    withTiming
 } from 'react-native-reanimated';
+import Svg, { Circle, G } from 'react-native-svg';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -78,6 +76,8 @@ const CircularProgressBar: React.FC<CircularProgressBarProps> = ({ percentage, t
     };
     const color = getColor(percentage);
 
+    const isDataExhausted = percentage >= 1;
+
     return (
         <View style={styles.container}>
             <Svg width={(RADIUS + STROKE_WIDTH) * 2} height={(RADIUS + STROKE_WIDTH) * 2}>
@@ -91,27 +91,46 @@ const CircularProgressBar: React.FC<CircularProgressBarProps> = ({ percentage, t
                         strokeWidth={STROKE_WIDTH}
                         fill="transparent"
                     />
-                    {/* Progress Circle */}
-                    <AnimatedCircle
-                        cx={RADIUS + STROKE_WIDTH}
-                        cy={RADIUS + STROKE_WIDTH}
-                        r={RADIUS}
-                        strokeWidth={STROKE_WIDTH}
-                        fill="transparent"
-                        strokeDasharray={CIRCUMFERENCE}
-                        strokeLinecap="round"
-                        animatedProps={animatedProps}
-                    />
+                    {/* Progress Circle - Hide if exhausted to match 'empty/grey' look or keep red? 
+                        The image shows a grey ring. If we want it to disappear, we condition it.
+                        But keeping it red might be better for 'Exhausted'. 
+                        User said "when data is cover... show No data Available similar to image".
+                        Image circle looks faint. Let's hide the progress circle if exhausted.
+                    */}
+                    {!isDataExhausted && (
+                        <AnimatedCircle
+                            cx={RADIUS + STROKE_WIDTH}
+                            cy={RADIUS + STROKE_WIDTH}
+                            r={RADIUS}
+                            strokeWidth={STROKE_WIDTH}
+                            fill="transparent"
+                            strokeDasharray={CIRCUMFERENCE}
+                            strokeLinecap="round"
+                            animatedProps={animatedProps}
+                        />
+                    )}
                 </G>
             </Svg>
             <View style={styles.textContainer}>
-                <Text style={[styles.percentageText, { color }]}>
-                    {Math.round((1 - percentage) * 100)}%
-                </Text>
-                <Text style={styles.subText}>Remaining</Text>
-                <Text style={styles.dataText}>
-                    {Math.round(used)} MB / {total} MB
-                </Text>
+                {isDataExhausted ? (
+                    <View style={{ alignItems: 'center' }}>
+                        <Text style={styles.alertTitle}>No</Text>
+                        <Text style={styles.alertTitle}>Data Available</Text>
+                        <View style={styles.divider} />
+                        <Text style={styles.alertSubtitle}>RECHARGE</Text>
+                        <Text style={styles.alertSubtitle}>NOW</Text>
+                    </View>
+                ) : (
+                    <>
+                        <Text style={[styles.percentageText, { color }]}>
+                            {Math.round((1 - percentage) * 100)}%
+                        </Text>
+                        <Text style={styles.subText}>Remaining</Text>
+                        <Text style={styles.dataText}>
+                            {Math.round(used)} MB / {total} MB
+                        </Text>
+                    </>
+                )}
             </View>
         </View>
     );
@@ -139,6 +158,24 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#555',
         marginTop: 4,
+    },
+    alertTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#FF3B30', // Red
+        textAlign: 'center',
+    },
+    alertSubtitle: {
+        fontSize: 10,
+        color: '#333',
+        textAlign: 'center',
+        letterSpacing: 1,
+    },
+    divider: {
+        height: 1,
+        width: 40,
+        backgroundColor: '#ccc',
+        marginVertical: 4,
     }
 });
 
